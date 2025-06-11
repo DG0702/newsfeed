@@ -2,10 +2,12 @@ package com.example.newsfeed.security;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
 
 
 import java.util.Date;
 
+@Slf4j
 public class JwtTokenProvider {
     
     // 비밀키 → 더 복잡한 키 사용 권장
@@ -38,6 +40,7 @@ public class JwtTokenProvider {
                     .parseClaimsJws(token); // JWT 토큰을 파서 객체로 토큰 파싱 후 검증하는 메서드
             return true;
         } catch (Exception e) {
+            log.warn("Invalid JWT : {}", e.getMessage() );
             return false; // 토근이 유효하지 않을 경우 예외 발생
         }
     }
