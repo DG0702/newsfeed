@@ -2,21 +2,47 @@ package com.example.newsfeed.security;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 
+import javax.crypto.SecretKey;
 import java.util.Date;
 
+@Component
 @Slf4j
 public class JwtTokenProvider {
     
     // 비밀키 → 더 복잡한 키 사용 권장
-    private final String SECRET_KEY = "mySecretKey12345";
+    @Value("${jwt.secret}")
+    private String SECRET_KEY;
+
+    // 만료시간 설정
+    @Value("${jwt.expiration}")
+    private long expiration;
+    
+    // SecretKey 캐싱하여 재사용
+    private SecretKey secretKey;
+
+    // 초기화 시점에 SecretKey 생성
+    @PostConstruct
+    public void init(){
+        this.secretKey = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+    }
+
+    // SecretKey 재사용
+    private SecretKey getSecretKey(){
+        return secretKey;
+    }
+
+
 
     // 토근 생성 메서드
     public String createToken(String userEmail) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + 1000 * 60 * 60);
+        Date expiryDate = new Date(now.getTime() + expiration);
         
         return Jwts.builder() 
                 // Jwts : 유틸리티 클래스 → JWT 생성, 파싱, 검증하는 작업을 도움
@@ -26,7 +52,7 @@ public class JwtTokenProvider {
                 .setSubject(userEmail) // 토큰 주체 (유저 식별값)
                 .setIssuedAt(now) // 발행시간
                 .setExpiration(expiryDate) // 만료시간
-                .signWith(Keys.hmacShaKeyFor(SECRET_KEY.getBytes()), SignatureAlgorithm.HS256) // 서명 알고리즘과 키
+                .signWith(getSecretKey(), SignatureAlgorithm.HS256) // 서명 알고리즘과 키
                 .compact(); // 실제 JWT 문자열 형식으로 최종 변환해주는 메서드
     }
 
@@ -35,7 +61,7 @@ public class JwtTokenProvider {
         try {
             Jwts.parserBuilder()
                     // JWT 토큰을 검증할 때 사용할 서명 키를 설정하는 메서드 → 문자열 비밀키를 바이트 배열로 변경 후 알고리즘에 맞는 키 객체로 변경
-                    .setSigningKey(Keys.hmacShaKeyFor(SECRET_KEY.getBytes())) 
+                    .setSigningKey(getSecretKey())
                     .build() // 파서 객체 생성하는 메서드
                     .parseClaimsJws(token); // JWT 토큰을 파서 객체로 토큰 파싱 후 검증하는 메서드
             return true;
@@ -48,7 +74,7 @@ public class JwtTokenProvider {
     //토근에서 사용자 식별 정보 추출
     public String getUserEmailFromToken(String token){
         return Jwts.parserBuilder()
-                .setSigningKey(Keys.hmacShaKeyFor(SECRET_KEY.getBytes()))
+                .setSigningKey(getSecretKey())
                 .build()
                 .parseClaimsJws(token)
                 .getBody()
