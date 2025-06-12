@@ -5,6 +5,7 @@ import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 
@@ -40,7 +41,10 @@ public class JwtTokenProvider {
 
 
     // 토근 생성 메서드
-    public String createToken(String userEmail) {
+    public String createToken(Authentication authentication) {
+
+        String userEmail = authentication.getName();
+
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiration);
         
