@@ -18,14 +18,14 @@ import java.util.Date;
 public class JwtTokenProvider {
 
     // 접두사 "Bearer"
-    public static final String BEARER_PREMIX = "Bearer";
+    public static final String BEARER_PREMIX = "Bearer ";
     
-    // 비밀키 → 더 복잡한 키 사용 권장
-    @Value("${jwt.secret}")
+    // 비밀키 → 더 복잡한 키 사용 권장 (최소256비트(32바이트)이상의 길이 요구)
+    @Value("mySuperSecureSecretKeyThatIsAtLeast32Chars  ")
     private String SECRET_KEY;
 
     // 만료시간 설정
-    @Value("${jwt.expiration}")
+    @Value("3600000")
     private long expiration;
     
     // SecretKey 캐싱하여 재사용

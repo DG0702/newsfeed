@@ -9,6 +9,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -28,17 +29,19 @@ public class SecurityConfig {
     }
 
 
+
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, TokenBlacklistService tokenBlacklistService) throws Exception {
         http
                 // CSRF 보호 비활성화 (JWT 사용 시에는 보통 필요 없음)
-                .csrf(csrf -> csrf.disable())
+                .csrf(AbstractHttpConfigurer::disable)
 
                 // 기본 HTTP 인증 비활성화
-                .httpBasic(httpBasic -> httpBasic.disable())
+                .httpBasic(AbstractHttpConfigurer::disable)
 
                 // 폼 로그인 비활성화 (JWT 인증 방식 사용하기 때문)
-                .formLogin(formLogin -> formLogin.disable())
+                .formLogin(AbstractHttpConfigurer::disable)
 
                 // 세션 사용 안함 : STATELESS 설정 (JWT 사용하기 때문에 서버가 세션을 저장하지 않음)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

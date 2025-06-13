@@ -2,7 +2,7 @@ package com.example.newsfeed.domain.user.service;
 
 import com.example.newsfeed.auth.dto.LoginRequest;
 import com.example.newsfeed.common.exception.PasswordMismatchException;
-import com.example.newsfeed.domain.user.common.PasswordEncoder;
+import com.example.newsfeed.security.CustomPasswordEncoder;
 import com.example.newsfeed.domain.user.common.UserMapper;
 import com.example.newsfeed.domain.user.dto.*;
 import com.example.newsfeed.domain.user.entity.Friendship;
@@ -11,7 +11,6 @@ import com.example.newsfeed.domain.user.repository.FriendshipRepository;
 import com.example.newsfeed.domain.user.repository.UserRepository;
 import com.example.newsfeed.security.JwtTokenProvider;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -28,7 +27,7 @@ public class UserService {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final CustomPasswordEncoder customPasswordEncoder;
     private final FriendshipRepository friendshipRepository;
 
 
@@ -38,7 +37,7 @@ public class UserService {
         User user = UserMapper.toEntity(dto);
 
         //비밀번호 암호화
-        user.setEncodedPassword(passwordEncoder.encode(dto.getPassword()));
+        user.setEncodedPassword(customPasswordEncoder.encode(dto.getPassword()));
 
         userRepository.findByEmail(dto.getEmail()).ifPresent(u -> {
             throw new IllegalArgumentException("이메일이 이미 존재합니다.");
@@ -53,7 +52,7 @@ public class UserService {
     @Transactional
     public void withdrawal(Long id, String password) {
         User user = findByIdOrElseThrow(id);
-        if (!passwordEncoder.matches(password, user.getPassword())) {
+        if (!customPasswordEncoder.matches(password, user.getPassword())) {
             throw new PasswordMismatchException("비밀번호가 올바르지 않습니다.");
         }
         userRepository.delete(user);
@@ -64,7 +63,7 @@ public class UserService {
         User user = userRepository.findByEmail(loginRequest.getUserEmail()).orElseThrow(
                 () -> new PasswordMismatchException("계정이 올바르지 않습니다"));
 
-        if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
+        if (!customPasswordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
             throw new PasswordMismatchException("비밀번호가 올바르지 않습니다.");
         }
 
@@ -99,14 +98,14 @@ public class UserService {
     public void updatePassword(Long id, String oldPassword, String newPassword) {
 
         User user = findByIdOrElseThrow(id);
-        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+        if (!customPasswordEncoder.matches(oldPassword, user.getPassword())) {
             throw new PasswordMismatchException("비밀번호가 올바르지 않습니다.");
         }
-        if (passwordEncoder.matches(newPassword, user.getPassword())) {
+        if (customPasswordEncoder.matches(newPassword, user.getPassword())) {
             throw new IllegalArgumentException("현재 비밀번호와 동일한 비밀번호로는 변경할 수 없습니다.");
         }
 
-        user.setEncodedPassword(passwordEncoder.encode(newPassword));
+        user.setEncodedPassword(customPasswordEncoder.encode(newPassword));
     }
 
 
