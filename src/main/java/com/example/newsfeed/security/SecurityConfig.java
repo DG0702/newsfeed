@@ -48,7 +48,7 @@ public class SecurityConfig {
                         // /auth/** 경로는 인증 없이 접근 가능
                         auth.requestMatchers("/auth/**").permitAll()
                         
-                        // 그 외 모든 요청은 인증 필요         
+                        // 그 외 모든 요청은 인증(로그인) 필요        
                         .anyRequest().authenticated())
 
                 // JWT 필터를 UsernamePasswordAuthenticationFilter 앞에 등록 → JWT 필터로 먼저 인증하여 뒤에 인증을 하지 않도록 설정
