@@ -16,6 +16,9 @@ import java.util.Date;
 @Component
 @Slf4j
 public class JwtTokenProvider {
+
+    // 접두사 "Bearer"
+    public static final String BEARER_PREMIX = "Bearer";
     
     // 비밀키 → 더 복잡한 키 사용 권장
     @Value("${jwt.secret}")
@@ -49,7 +52,7 @@ public class JwtTokenProvider {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiration);
         
-        return Jwts.builder() 
+        String token = Jwts.builder() 
                 // Jwts : 유틸리티 클래스 → JWT 생성, 파싱, 검증하는 작업을 도움
                 
                 // 파싱 = JWT 문자열을 해체하고, 서명 검증 후 페이로드 데이터를 추출하는 과정
@@ -59,6 +62,8 @@ public class JwtTokenProvider {
                 .setExpiration(expiryDate) // 만료시간
                 .signWith(getSecretKey(), SignatureAlgorithm.HS256) // 서명 알고리즘과 키
                 .compact(); // 실제 JWT 문자열 형식으로 최종 변환해주는 메서드
+
+        return BEARER_PREMIX + token; // "Bearer" 접두사 붙이기
     }
 
     // 토근 검증 메서드

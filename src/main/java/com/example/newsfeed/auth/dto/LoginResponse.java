@@ -2,10 +2,10 @@ package com.example.newsfeed.auth.dto;
 
 
 
-public class JwtResponse {
+public class LoginResponse {
     private String token;
 
-    public JwtResponse(String token){
+    public LoginResponse(String token){
         this.token = token;
     }
 
