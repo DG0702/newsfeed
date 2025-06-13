@@ -1,6 +1,7 @@
 package com.example.newsfeed.security;
 
 
+import com.example.newsfeed.auth.service.TokenBlacklistService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,6 +20,7 @@ public class SecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final CustomUserDetailsService customUserDetailsService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception{
@@ -27,7 +29,7 @@ public class SecurityConfig {
 
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, TokenBlacklistService tokenBlacklistService) throws Exception {
         http
                 // CSRF 보호 비활성화 (JWT 사용 시에는 보통 필요 없음)
                 .csrf(csrf -> csrf.disable())
@@ -51,7 +53,7 @@ public class SecurityConfig {
 
                 // JWT 필터를 UsernamePasswordAuthenticationFilter 앞에 등록 → JWT 필터로 먼저 인증하여 뒤에 인증을 하지 않도록 설정
                 .addFilterBefore(new JwtFilter(
-                        jwtTokenProvider,customUserDetailsService),
+                        jwtTokenProvider,customUserDetailsService,tokenBlacklistService),
                         UsernamePasswordAuthenticationFilter.class);
         
         // 최종적으로 SecurityFilterChain 객체 반환

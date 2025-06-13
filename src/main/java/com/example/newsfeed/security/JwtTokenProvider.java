@@ -3,6 +3,7 @@ package com.example.newsfeed.security;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
@@ -75,7 +76,7 @@ public class JwtTokenProvider {
         }
     }
     
-    //토근에서 사용자 식별 정보 추출
+    //토근에서 사용자 정보 추출
     public String getUserEmailFromToken(String token){
         return Jwts.parserBuilder()
                 .setSigningKey(getSecretKey())
@@ -83,6 +84,30 @@ public class JwtTokenProvider {
                 .parseClaimsJws(token)
                 .getBody()
                 .getSubject();
+    }
+
+    // HTTP Header "Authorization" 필드 안에 "Bearer<토큰>" 형태 → JWT 토큰 형태로 변경
+    public String resolveToken(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        if(bearerToken != null && bearerToken.startsWith("Bearer ")){
+            return bearerToken.substring(7); // "Bearer" 이후 문자열만 반환 → "Bearer" 제거
+        }
+        return null;
+    }
+    
+    public Long getExpiration(String token){
+        try {
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(secretKey) // 비밀키 사용
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+
+            Date expiration = claims.getExpiration();
+            return expiration.getTime() - System.currentTimeMillis(); // 남은 시간 (ms)
+        }catch (JwtException | IllegalArgumentException e){
+            throw new RuntimeException("유효하지 않은 JWT 토큰입니다");
+        }
     }
 
 
