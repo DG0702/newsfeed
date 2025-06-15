@@ -1,10 +1,11 @@
-package com.example.newsfeed.domain.user.dto;
+package com.example.newsfeed.auth.dto;
+
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-@Getter
 @AllArgsConstructor
+@Getter
 public class LoginResponseDto {
-    private Long userId;
+    private String token;
 }

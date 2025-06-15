@@ -1,20 +1,17 @@
 package com.example.newsfeed.domain.user.service;
 
-import com.example.newsfeed.auth.dto.LoginRequest;
+import com.example.newsfeed.auth.dto.LoginRequestDto;
 import com.example.newsfeed.common.exception.PasswordMismatchException;
-import com.example.newsfeed.security.CustomPasswordEncoder;
+import com.example.newsfeed.domain.user.common.PasswordEncoder;
 import com.example.newsfeed.domain.user.common.UserMapper;
 import com.example.newsfeed.domain.user.dto.*;
 import com.example.newsfeed.domain.user.entity.Friendship;
 import com.example.newsfeed.domain.user.entity.User;
 import com.example.newsfeed.domain.user.repository.FriendshipRepository;
 import com.example.newsfeed.domain.user.repository.UserRepository;
-import com.example.newsfeed.security.JwtTokenProvider;
+import com.example.newsfeed.security.JwtUtil;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,57 +21,55 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class UserService {
 
-    private final AuthenticationManager authenticationManager;
-    private final JwtTokenProvider jwtTokenProvider;
+
     private final UserRepository userRepository;
-    private final CustomPasswordEncoder customPasswordEncoder;
+    private final PasswordEncoder passwordEncoder;
     private final FriendshipRepository friendshipRepository;
+    private final JwtUtil jwtUtil;
 
 
     //회원가입 signup
     @Transactional
     public Long signup(UserRequestDto dto) {
-        User user = UserMapper.toEntity(dto);
-
-        //비밀번호 암호화
-        user.setEncodedPassword(customPasswordEncoder.encode(dto.getPassword()));
-
         userRepository.findByEmail(dto.getEmail()).ifPresent(u -> {
             throw new IllegalArgumentException("이메일이 이미 존재합니다.");
         });
+
+        User user = UserMapper.toEntity(dto);
+
+        //비밀번호 암호화
+        user.setEncodedPassword(passwordEncoder.encode(dto.getPassword()));
 
         userRepository.save(user);
 
         return user.getId();
     }
+    
+    // 로그인
+    public String login(LoginRequestDto dto){
+        String userEmail = dto.getUserEmail();
+        String password = dto.getPassword();
+
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("등록된 이메일이 없습니다"));
+
+        if(!passwordEncoder.matches(password,user.getPassword())){
+            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다");
+        }
+
+        return jwtUtil.generateToken(user.getName());
+    }
+
+
 
     // 회원탈퇴
     @Transactional
     public void withdrawal(Long id, String password) {
         User user = findByIdOrElseThrow(id);
-        if (!customPasswordEncoder.matches(password, user.getPassword())) {
+        if (!passwordEncoder.matches(password, user.getPassword())) {
             throw new PasswordMismatchException("비밀번호가 올바르지 않습니다.");
         }
         userRepository.delete(user);
-    }
-
-    // 로그인
-    public String login(LoginRequest loginRequest) {
-        User user = userRepository.findByEmail(loginRequest.getUserEmail()).orElseThrow(
-                () -> new PasswordMismatchException("계정이 올바르지 않습니다"));
-
-        if (!customPasswordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
-            throw new PasswordMismatchException("비밀번호가 올바르지 않습니다.");
-        }
-
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginRequest.getUserEmail(),
-                        loginRequest.getPassword()
-                )
-        );
-
-        return jwtTokenProvider.createToken(authentication);
     }
 
 
@@ -98,14 +93,14 @@ public class UserService {
     public void updatePassword(Long id, String oldPassword, String newPassword) {
 
         User user = findByIdOrElseThrow(id);
-        if (!customPasswordEncoder.matches(oldPassword, user.getPassword())) {
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
             throw new PasswordMismatchException("비밀번호가 올바르지 않습니다.");
         }
-        if (customPasswordEncoder.matches(newPassword, user.getPassword())) {
+        if (passwordEncoder.matches(newPassword, user.getPassword())) {
             throw new IllegalArgumentException("현재 비밀번호와 동일한 비밀번호로는 변경할 수 없습니다.");
         }
 
-        user.setEncodedPassword(customPasswordEncoder.encode(newPassword));
+        user.setEncodedPassword(passwordEncoder.encode(newPassword));
     }
 
 
